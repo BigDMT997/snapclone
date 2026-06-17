@@ -378,15 +378,12 @@ const Chat = {
     sendBtn.parentNode.replaceChild(newSendBtn, sendBtn);
     newSendBtn.addEventListener('click', () => this.sendMessage());
 
-    // FIXED: Camera button in chat sends SNAP not regular photo
+    // Camera button in chat - opens gallery for photo
     const cameraBtn = document.getElementById('chat-camera-btn');
     const newCameraBtn = cameraBtn.cloneNode(true);
     cameraBtn.parentNode.replaceChild(newCameraBtn, cameraBtn);
     newCameraBtn.addEventListener('click', () => {
-      // Navigate to camera with recipient pre-selected
-      Snaps.selectedRecipients = [this.currentChatUserId];
-      App.navigateTo('camera-screen');
-      UI.showToast('Take a snap to send', 'info');
+      document.getElementById('chat-media-input').click();
     });
 
     const mediaInput = document.getElementById('chat-media-input');
