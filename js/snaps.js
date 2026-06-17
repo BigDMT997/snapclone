@@ -1,7 +1,9 @@
+// js/snaps.js
 const Snaps = {
   pendingSnaps: [],
   selectedRecipients: [],
   sendToStory: false,
+  snapTimer: null,
 
   async loadPendingSnaps() {
     try {
@@ -18,6 +20,10 @@ const Snaps = {
     this.selectedRecipients = [];
     this.sendToStory = false;
 
+    // Reset all checkmarks
+    document.getElementById('story-check').classList.remove('selected');
+    document.getElementById('send-to-confirm').style.display = 'none';
+
     try {
       const { friends } = await App.api('/api/users/friends');
       const container = document.getElementById('send-to-friends');
@@ -28,55 +34,68 @@ const Snaps = {
             <p>Add friends to send snaps!</p>
           </div>
         `;
-        return;
+      } else {
+        container.innerHTML = friends.map(friend => `
+          <div class="send-to-item" onclick="Snaps.toggleRecipient('${friend._id}', this)">
+            <div class="conv-avatar">
+              ${friend.avatar ? `<img src="${friend.avatar}" alt="">` : '👻'}
+            </div>
+            <div class="conv-info">
+              <div class="conv-name">${friend.displayName || friend.username}</div>
+              <div class="conv-preview">@${friend.username}</div>
+            </div>
+            <div class="send-to-check" id="check-${friend._id}"></div>
+          </div>
+        `).join('');
       }
-
-      container.innerHTML = friends.map(friend => `
-        <div class="send-to-item" onclick="Snaps.toggleRecipient('${friend._id}', this)">
-          <div class="conv-avatar">
-            ${friend.avatar ? `<img src="${friend.avatar}" alt="">` : '👻'}
-          </div>
-          <div class="conv-info">
-            <div class="conv-name">${friend.displayName || friend.username}</div>
-            <div class="conv-preview">@${friend.username}</div>
-          </div>
-          <div class="send-to-check" id="check-${friend._id}"></div>
-        </div>
-      `).join('');
     } catch (err) {
       console.error('Error loading friends:', err);
     }
 
-    // Setup send-to events
     this.setupSendToEvents();
   },
 
   setupSendToEvents() {
-    // Back
-    document.getElementById('send-to-back').onclick = () => {
+    // FIXED: X button now properly closes and returns to camera
+    const backBtn = document.getElementById('send-to-back');
+    const newBackBtn = backBtn.cloneNode(true);
+    backBtn.parentNode.replaceChild(newBackBtn, backBtn);
+    newBackBtn.addEventListener('click', () => {
+      this.selectedRecipients = [];
+      this.sendToStory = false;
       App.navigateTo('camera-screen');
       Camera.closePreview();
-    };
+    });
 
     // Story toggle
-    document.getElementById('send-to-story').onclick = () => {
+    const storyOpt = document.getElementById('send-to-story');
+    const newStoryOpt = storyOpt.cloneNode(true);
+    storyOpt.parentNode.replaceChild(newStoryOpt, storyOpt);
+    newStoryOpt.addEventListener('click', () => {
       this.sendToStory = !this.sendToStory;
       const check = document.getElementById('story-check');
       check.classList.toggle('selected', this.sendToStory);
       this.updateSendButton();
-    };
+    });
 
     // Confirm send
-    document.getElementById('send-to-confirm').onclick = () => {
+    const confirmBtn = document.getElementById('send-to-confirm');
+    const newConfirmBtn = confirmBtn.cloneNode(true);
+    confirmBtn.parentNode.replaceChild(newConfirmBtn, confirmBtn);
+    newConfirmBtn.addEventListener('click', () => {
       this.sendSnap();
-    };
+    });
 
     // Search
-    document.getElementById('send-to-search').oninput = (e) => {
+    const searchInput = document.getElementById('send-to-search');
+    searchInput.oninput = (e) => {
       const query = e.target.value.toLowerCase();
       document.querySelectorAll('#send-to-friends .send-to-item').forEach(item => {
-        const name = item.querySelector('.conv-name').textContent.toLowerCase();
-        item.style.display = name.includes(query) ? 'flex' : 'none';
+        const nameEl = item.querySelector('.conv-name');
+        if (nameEl) {
+          const name = nameEl.textContent.toLowerCase();
+          item.style.display = name.includes(query) ? 'flex' : 'none';
+        }
       });
     };
   },
@@ -110,14 +129,17 @@ const Snaps = {
   },
 
   async sendSnap() {
-    if (!App.capturedImageData) return;
+    if (!App.capturedImageData) {
+      UI.showToast('No image to send', 'error');
+      return;
+    }
 
-    const caption = document.getElementById('snap-caption-input').value.trim();
+    const caption = document.getElementById('snap-caption-input')?.value?.trim() || '';
 
     UI.showLoading();
 
     try {
-      // Send to selected friends
+      // FIXED: Send as SNAP not regular image
       if (this.selectedRecipients.length > 0) {
         await App.api('/api/snaps/send', {
           method: 'POST',
@@ -131,14 +153,21 @@ const Snaps = {
         });
       }
 
-      // Post as story
       if (this.sendToStory) {
-        await Stories.postStory(App.capturedImageData, caption);
+        await Stories.postStory(App.capturedImageData, caption, true);
       }
 
       UI.showToast('Sent! 🚀', 'success');
+
+      // Reset state
+      this.selectedRecipients = [];
+      this.sendToStory = false;
+
       App.navigateTo('camera-screen');
       Camera.closePreview();
+
+      // Reload conversations so new snaps show
+      Chat.loadConversations();
     } catch (err) {
       UI.showToast('Failed to send', 'error');
       console.error(err);
@@ -148,8 +177,9 @@ const Snaps = {
   },
 
   handleNewSnap(data) {
-    UI.showToast('New snap! 📸', 'info');
+    UI.showToast('📸 New snap!', 'info');
     this.loadPendingSnaps();
+    Chat.loadConversations();
   },
 
   async openSnap(snapId) {
@@ -187,29 +217,29 @@ const Snaps = {
     viewer.style.display = 'block';
     document.getElementById('bottom-nav').style.display = 'none';
 
-    // Timer
     const duration = snap.duration || 5;
-    progress.style.transition = `width ${duration}s linear`;
+    progress.style.transition = 'none';
     progress.style.width = '100%';
 
     requestAnimationFrame(() => {
+      progress.style.transition = `width ${duration}s linear`;
       progress.style.width = '0%';
     });
 
-    // Auto-close after duration
     this.snapTimer = setTimeout(() => {
       this.closeSnapViewer();
     }, duration * 1000);
 
-    // Close button
     document.getElementById('snap-close-btn').onclick = () => {
       this.closeSnapViewer();
     };
 
-    // Notify sender
     if (App.socket) {
       App.socket.emit('snap_opened', { snapId: snap._id });
     }
+
+    // Refresh chat list to update status
+    setTimeout(() => Chat.loadConversations(), 1000);
   },
 
   closeSnapViewer() {
@@ -218,5 +248,6 @@ const Snaps = {
     document.getElementById('bottom-nav').style.display = 'flex';
     document.getElementById('snap-timer-progress').style.width = '100%';
     document.getElementById('snap-timer-progress').style.transition = 'none';
+    Chat.loadConversations();
   }
 };

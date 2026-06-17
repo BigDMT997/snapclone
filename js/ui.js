@@ -86,3 +86,28 @@ document.addEventListener('DOMContentLoaded', () => {
   UI.initSwipeNavigation();
   UI.showInstallPrompt();
 });
+
+// iOS Keyboard fix - keep input above keyboard
+if ('visualViewport' in window) {
+  window.visualViewport.addEventListener('resize', () => {
+    const chatScreen = document.getElementById('chat-detail-screen');
+    if (chatScreen && chatScreen.classList.contains('active')) {
+      const inputBar = document.querySelector('.chat-input-bar');
+      if (inputBar) {
+        const offset = window.innerHeight - window.visualViewport.height;
+        inputBar.style.bottom = offset + 'px';
+
+        const replyBar = document.getElementById('reply-bar');
+        if (replyBar && replyBar.style.display !== 'none') {
+          replyBar.style.bottom = (offset + 56) + 'px';
+        }
+
+        // Scroll to bottom
+        const container = document.getElementById('messages-container');
+        if (container) {
+          container.scrollTop = container.scrollHeight;
+        }
+      }
+    }
+  });
+}

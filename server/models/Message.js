@@ -1,3 +1,4 @@
+// server/models/Message.js
 const mongoose = require('mongoose');
 
 const messageSchema = new mongoose.Schema({
@@ -24,12 +25,21 @@ const messageSchema = new mongoose.Schema({
     type: String,
     default: null
   },
+  replyTo: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Message',
+    default: null
+  },
   read: {
     type: Boolean,
     default: false
   },
   readAt: {
     type: Date
+  },
+  delivered: {
+    type: Boolean,
+    default: true
   },
   saved: {
     type: Boolean,
@@ -42,7 +52,7 @@ const messageSchema = new mongoose.Schema({
   expiresAt: {
     type: Date,
     default: function() {
-      return new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+      return new Date(Date.now() + 24 * 60 * 60 * 1000);
     }
   }
 }, { timestamps: true });

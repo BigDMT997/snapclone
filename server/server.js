@@ -118,7 +118,7 @@ io.on('connection', (socket) => {
 
   // Chat messaging
   socket.on('send_message', async (data) => {
-    const { recipientId, content, type, mediaData } = data;
+    const { recipientId, content, type, mediaData, replyToId } = data;
     const Message = require('./models/Message');
 
     try {
@@ -128,10 +128,14 @@ io.on('connection', (socket) => {
         content: content,
         type: type || 'text',
         mediaData: mediaData || null,
+        replyTo: replyToId || null,
         read: false
       });
       await message.save();
       await message.populate('sender', 'username displayName avatar');
+      if (replyToId) {
+        await message.populate('replyTo', 'content type sender');
+      }
 
       const recipientSocket = connectedUsers.get(recipientId);
       if (recipientSocket) {
@@ -140,6 +144,7 @@ io.on('connection', (socket) => {
 
       socket.emit('message_sent', message);
     } catch (err) {
+      console.error('Send message error:', err);
       socket.emit('message_error', { error: 'Failed to send message' });
     }
   });

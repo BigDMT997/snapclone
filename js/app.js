@@ -168,10 +168,13 @@ const App = {
       btn.addEventListener('click', () => this.navigateTo('camera-screen'));
     });
 
-    // Profile button
-    document.getElementById('profile-btn').addEventListener('click', () => {
-      this.navigateTo('profile-screen');
-    });
+    // Profile button (now on chat tab)
+    const chatProfileBtn = document.getElementById('chat-profile-btn');
+    if (chatProfileBtn) {
+      chatProfileBtn.addEventListener('click', () => {
+        this.navigateTo('profile-screen');
+      });
+    }
 
     document.getElementById('profile-back-btn').addEventListener('click', () => {
       this.navigateTo('camera-screen');
@@ -213,7 +216,7 @@ const App = {
     document.getElementById('friends-count-value').textContent = this.user.friends?.length || 0;
 
     if (this.user.avatar) {
-      const avatarElements = document.querySelectorAll('#user-avatar-icon, #profile-avatar-large');
+      const avatarElements = document.querySelectorAll('#chat-user-avatar, #profile-avatar-large');
       avatarElements.forEach(el => {
         if (this.user.avatar.startsWith('data:')) {
           el.innerHTML = `<img src="${this.user.avatar}" alt="avatar">`;

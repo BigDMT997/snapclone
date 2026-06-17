@@ -89,7 +89,8 @@ router.get('/:userId', auth, async (req, res) => {
     const messages = await Message.find(query)
       .sort({ createdAt: -1 })
       .limit(parseInt(limit))
-      .populate('sender', 'username displayName avatar');
+      .populate('sender', 'username displayName avatar')
+      .populate('replyTo', 'content type sender');
 
     res.json(messages.reverse());
   } catch (err) {

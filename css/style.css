@@ -1706,3 +1706,249 @@ a {
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
+
+/* ========== FIX: Camera portrait orientation ========== */
+#camera-preview {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transform: scaleX(1);
+}
+
+.camera-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: #000;
+  overflow: hidden;
+}
+
+/* ========== FIX: Keyboard handling ========== */
+.chat-input-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 8px 12px calc(8px + env(safe-area-inset-bottom));
+  background: var(--snap-dark);
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-top: 1px solid rgba(255,255,255,0.05);
+}
+
+#chat-detail-screen {
+  padding-bottom: 0 !important;
+}
+
+.messages-container {
+  padding-bottom: 80px !important;
+  height: calc(100vh - 130px);
+  overflow-y: auto;
+}
+
+/* When keyboard opens, viewport changes */
+@media (max-height: 500px) {
+  .chat-input-bar {
+    padding-bottom: 8px;
+  }
+}
+
+/* ========== Reply bar ========== */
+.reply-bar {
+  position: fixed;
+  bottom: calc(56px + env(safe-area-inset-bottom));
+  left: 0;
+  right: 0;
+  background: var(--snap-dark);
+  border-top: 1px solid rgba(255,255,255,0.1);
+  padding: 8px 12px;
+  z-index: 99;
+}
+
+.reply-bar-content {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.reply-bar-line {
+  width: 3px;
+  height: 36px;
+  background: var(--snap-blue);
+  border-radius: 2px;
+}
+
+.reply-bar-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.reply-bar-name {
+  font-size: 12px;
+  color: var(--snap-blue);
+  font-weight: 600;
+}
+
+.reply-bar-text {
+  font-size: 13px;
+  color: var(--snap-text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.reply-bar-cancel {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--snap-gray);
+  color: var(--snap-text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+}
+
+/* ========== Reply preview in message ========== */
+.reply-preview {
+  background: rgba(0,0,0,0.2);
+  border-left: 3px solid rgba(255,255,255,0.4);
+  padding: 6px 10px;
+  margin-bottom: 6px;
+  border-radius: 6px;
+  font-size: 12px;
+  opacity: 0.85;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ========== Message wrapper for swipe ========== */
+.message-wrapper {
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  transition: transform 0.05s ease;
+  will-change: transform;
+}
+
+.message-wrapper.sent {
+  align-items: flex-end;
+}
+
+.message-wrapper.received {
+  align-items: flex-start;
+}
+
+.message-wrapper.reply-active::before {
+  content: '↪';
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--snap-blue);
+  font-size: 20px;
+  font-weight: bold;
+}
+
+/* ========== Read receipts ========== */
+.read-receipt {
+  font-size: 11px;
+  color: var(--snap-text-secondary);
+  margin-top: 2px;
+  padding-right: 8px;
+}
+
+/* ========== Story upload modal ========== */
+.story-upload-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+.story-upload-content {
+  background: var(--snap-dark);
+  border-radius: 20px;
+  padding: 24px;
+  width: 85%;
+  max-width: 340px;
+  text-align: center;
+}
+
+.story-upload-content h3 {
+  margin-bottom: 20px;
+  font-size: 20px;
+}
+
+.story-upload-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  width: 100%;
+  padding: 16px;
+  background: var(--snap-gray);
+  border-radius: 14px;
+  color: white;
+  font-size: 16px;
+  margin-bottom: 10px;
+  font-weight: 500;
+}
+
+.story-upload-btn i {
+  font-size: 20px;
+  color: var(--snap-yellow);
+}
+
+.story-upload-btn.cancel {
+  background: transparent;
+  color: var(--snap-red);
+}
+
+/* ========== Snap status badges in conversations ========== */
+.conv-snap-status {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 4px;
+  margin-right: 6px;
+}
+
+.conv-snap-status.sent {
+  color: var(--snap-red);
+}
+
+.conv-snap-status.received {
+  color: var(--snap-purple);
+}
+
+.conv-snap-status.opened {
+  color: var(--snap-text-secondary);
+}
+
+/* ========== iOS keyboard fix ========== */
+@supports (-webkit-touch-callout: none) {
+  .chat-input-bar {
+    position: fixed;
+    bottom: 0;
+  }
+
+  #chat-detail-screen.keyboard-open .chat-input-bar {
+    bottom: 0;
+    padding-bottom: 8px;
+  }
+}

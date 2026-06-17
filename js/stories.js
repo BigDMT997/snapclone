@@ -1,8 +1,10 @@
+// js/stories.js
 const Stories = {
   storiesFeed: [],
   currentStoryGroup: null,
   currentStoryIndex: 0,
   storyTimer: null,
+  pendingStoryUpload: false,
 
   async loadStories() {
     try {
@@ -15,9 +17,6 @@ const Stories = {
   },
 
   renderStories() {
-    const container = document.getElementById('friends-stories-list');
-
-    // My stories
     const myStories = this.storiesFeed.find(g => g.user?._id === App.user._id);
     const myStoryContainer = document.getElementById('my-story-container');
 
@@ -29,21 +28,31 @@ const Stories = {
           </div>
           <span>My Story</span>
         </div>
-        <div class="story-item" id="my-story-add">
+        <div class="story-item" id="my-story-add-btn">
           <div class="story-avatar add-story">
             <i class="fas fa-plus"></i>
           </div>
           <span>Add</span>
         </div>
       `;
+    } else {
+      myStoryContainer.innerHTML = `
+        <div class="story-item" id="my-story-add-btn">
+          <div class="story-avatar add-story">
+            <i class="fas fa-plus"></i>
+          </div>
+          <span>Add to Story</span>
+        </div>
+      `;
     }
 
-    document.getElementById('my-story-add')?.addEventListener('click', () => {
-      App.navigateTo('camera-screen');
+    // FIXED: Add to story button now triggers file picker
+    document.getElementById('my-story-add-btn')?.addEventListener('click', () => {
+      this.promptAddStory();
     });
 
-    // Friends' stories
     const friendStories = this.storiesFeed.filter(g => g.user?._id !== App.user._id);
+    const container = document.getElementById('friends-stories-list');
 
     if (!friendStories.length) {
       container.innerHTML = `
@@ -75,6 +84,56 @@ const Stories = {
     }).join('');
   },
 
+  // FIXED: Now gives option to upload photo OR take new one
+  promptAddStory() {
+    // Create a temporary modal
+    const modal = document.createElement('div');
+    modal.className = 'story-upload-modal';
+    modal.innerHTML = `
+      <div class="story-upload-content">
+        <h3>Add to Story</h3>
+        <button id="upload-from-camera" class="story-upload-btn">
+          <i class="fas fa-camera"></i> Take Photo
+        </button>
+        <button id="upload-from-gallery" class="story-upload-btn">
+          <i class="fas fa-images"></i> Upload from Gallery
+        </button>
+        <button id="upload-cancel" class="story-upload-btn cancel">Cancel</button>
+      </div>
+    `;
+    document.body.appendChild(modal);
+
+    document.getElementById('upload-from-camera').onclick = () => {
+      modal.remove();
+      App.navigateTo('camera-screen');
+    };
+
+    document.getElementById('upload-from-gallery').onclick = () => {
+      modal.remove();
+      // Create file input
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = 'image/*';
+      input.onchange = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+          const reader = new FileReader();
+          reader.onload = (ev) => {
+            App.capturedImageData = ev.target.result;
+            App.navigateTo('camera-screen');
+            Camera.showPreview(ev.target.result);
+          };
+          reader.readAsDataURL(file);
+        }
+      };
+      input.click();
+    };
+
+    document.getElementById('upload-cancel').onclick = () => {
+      modal.remove();
+    };
+  },
+
   viewStoryGroup(userId) {
     const group = this.storiesFeed.find(g => g.user?._id === userId);
     if (!group || !group.stories.length) return;
@@ -82,7 +141,6 @@ const Stories = {
     this.currentStoryGroup = group;
     this.currentStoryIndex = 0;
 
-    // Find first unviewed
     const firstUnviewed = group.stories.findIndex(s => !s.viewed);
     if (firstUnviewed > -1) {
       this.currentStoryIndex = firstUnviewed;
@@ -122,7 +180,6 @@ const Stories = {
     viewer.style.display = 'block';
     document.getElementById('bottom-nav').style.display = 'none';
 
-    // Progress bar
     progress.style.transition = 'none';
     progress.style.width = '0%';
     requestAnimationFrame(() => {
@@ -130,23 +187,17 @@ const Stories = {
       progress.style.width = '100%';
     });
 
-    // Auto-advance
     clearTimeout(this.storyTimer);
     this.storyTimer = setTimeout(() => {
       this.nextStory();
     }, 5000);
 
-    // Mark as viewed
     this.markStoryViewed(story._id);
-
-    // Touch controls
     this.setupStoryControls();
   },
 
   setupStoryControls() {
     const viewer = document.getElementById('story-viewer');
-
-    // Remove old listeners
     const newViewer = viewer.cloneNode(false);
     while (viewer.firstChild) {
       newViewer.appendChild(viewer.firstChild);
@@ -154,6 +205,9 @@ const Stories = {
     viewer.parentNode.replaceChild(newViewer, viewer);
 
     newViewer.addEventListener('click', (e) => {
+      if (e.target.closest('#story-close-btn') || e.target.closest('.story-reply-bar')) {
+        return;
+      }
       const rect = newViewer.getBoundingClientRect();
       const x = e.clientX - rect.left;
       const midpoint = rect.width / 2;
@@ -165,13 +219,11 @@ const Stories = {
       }
     });
 
-    // Close button
     document.getElementById('story-close-btn').addEventListener('click', (e) => {
       e.stopPropagation();
       this.closeStoryViewer();
     });
 
-    // Reply
     const replyInput = document.getElementById('story-reply-input');
     replyInput.addEventListener('focus', () => {
       clearTimeout(this.storyTimer);
@@ -191,7 +243,6 @@ const Stories = {
   nextStory() {
     this.currentStoryIndex++;
     if (this.currentStoryIndex >= this.currentStoryGroup.stories.length) {
-      // Move to next group
       const currentGroupIndex = this.storiesFeed.findIndex(
         g => g.user?._id === this.currentStoryGroup.user?._id
       );
@@ -235,7 +286,8 @@ const Stories = {
     }
   },
 
-  async postStory(imageData, caption) {
+  // FIXED: Now properly closes preview after posting
+  async postStory(imageData, caption, skipClose) {
     if (!imageData) {
       UI.showToast('No image to post', 'error');
       return;
@@ -247,14 +299,18 @@ const Stories = {
         method: 'POST',
         body: JSON.stringify({
           imageData,
-          caption: caption || document.getElementById('snap-caption-input')?.value?.trim() || '',
+          caption: caption || '',
           filters: [Camera.currentFilter]
         })
       });
 
       UI.showToast('Story posted! 📖', 'success');
       this.loadStories();
-      Camera.closePreview();
+
+      if (!skipClose) {
+        Camera.closePreview();
+        App.navigateTo('camera-screen');
+      }
     } catch (err) {
       UI.showToast('Failed to post story', 'error');
       console.error(err);

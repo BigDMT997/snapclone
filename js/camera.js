@@ -1,3 +1,4 @@
+// js/camera.js
 const Camera = {
   stream: null,
   facingMode: 'user',
@@ -11,11 +12,9 @@ const Camera = {
   },
 
   setupEventListeners() {
-    // Capture
     const captureBtn = document.getElementById('capture-btn');
     captureBtn.addEventListener('click', () => this.capture());
 
-    // Long press for video (hold)
     let pressTimer;
     captureBtn.addEventListener('touchstart', (e) => {
       pressTimer = setTimeout(() => {
@@ -30,23 +29,19 @@ const Camera = {
       }
     });
 
-    // Flip camera
     document.getElementById('camera-flip-btn').addEventListener('click', () => {
       this.flipCamera();
     });
 
-    // Flash
     document.getElementById('flash-btn').addEventListener('click', () => {
       this.toggleFlash();
     });
 
-    // Filters toggle
     document.getElementById('filters-toggle-btn').addEventListener('click', () => {
       const bar = document.getElementById('filters-bar');
       bar.style.display = bar.style.display === 'none' ? 'block' : 'none';
     });
 
-    // Filter buttons
     document.querySelectorAll('.filter-btn').forEach(btn => {
       btn.addEventListener('click', () => {
         document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
@@ -56,7 +51,6 @@ const Camera = {
       });
     });
 
-    // Gallery
     document.getElementById('gallery-btn').addEventListener('click', () => {
       document.getElementById('gallery-input').click();
     });
@@ -67,7 +61,6 @@ const Camera = {
       }
     });
 
-    // Preview controls
     document.getElementById('preview-close').addEventListener('click', () => {
       this.closePreview();
     });
@@ -86,20 +79,23 @@ const Camera = {
       this.addCaption();
     });
 
-    // Send snap
     document.getElementById('send-snap-btn').addEventListener('click', () => {
       App.navigateTo('send-to-screen');
       Snaps.loadSendToList();
     });
 
-    // Save snap
     document.getElementById('save-snap-btn').addEventListener('click', () => {
       this.saveToDevice();
     });
 
-    // Story button
+    // FIXED: Story button now properly posts the captured image
     document.getElementById('story-btn').addEventListener('click', () => {
-      Stories.postStory(App.capturedImageData);
+      if (App.capturedImageData) {
+        const caption = document.getElementById('snap-caption-input').value.trim();
+        Stories.postStory(App.capturedImageData, caption);
+      } else {
+        UI.showToast('No photo to post', 'error');
+      }
     });
   },
 
@@ -109,11 +105,13 @@ const Camera = {
         this.stream.getTracks().forEach(track => track.stop());
       }
 
+      // FIXED: Portrait mode constraints
       const constraints = {
         video: {
           facingMode: this.facingMode,
           width: { ideal: 1080 },
-          height: { ideal: 1920 }
+          height: { ideal: 1920 },
+          aspectRatio: { ideal: 9/16 }
         },
         audio: false
       };
@@ -121,9 +119,23 @@ const Camera = {
       this.stream = await navigator.mediaDevices.getUserMedia(constraints);
       const video = document.getElementById('camera-preview');
       video.srcObject = this.stream;
+
+      // FIXED: Wait for video to load before playing
+      video.onloadedmetadata = () => {
+        video.play();
+      };
     } catch (err) {
       console.error('Camera error:', err);
-      UI.showToast('Camera access denied', 'error');
+      // Fallback with simpler constraints
+      try {
+        this.stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: this.facingMode },
+          audio: false
+        });
+        document.getElementById('camera-preview').srcObject = this.stream;
+      } catch (err2) {
+        UI.showToast('Camera access denied', 'error');
+      }
     }
   },
 
@@ -163,41 +175,79 @@ const Camera = {
     video.style.filter = filterMap[this.currentFilter] || 'none';
   },
 
+  // FIXED: Capture now uses portrait dimensions properly
   capture() {
     const video = document.getElementById('camera-preview');
     const canvas = document.getElementById('camera-canvas');
     const ctx = canvas.getContext('2d');
 
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
+    // Get the actual displayed dimensions
+    const videoWidth = video.videoWidth;
+    const videoHeight = video.videoHeight;
 
-    // Apply filter to canvas
-    const filterMap = {
-      'none': 'none',
-      'grayscale': 'grayscale(100%)',
-      'sepia': 'sepia(100%)',
-      'saturate': 'saturate(200%)',
-      'contrast': 'contrast(150%)',
-      'brightness': 'brightness(130%)',
-      'hue-rotate': 'hue-rotate(90deg)',
-      'invert': 'invert(100%)',
-      'blur': 'blur(2px)',
-      'vintage': 'sepia(50%) contrast(120%) brightness(90%)'
-    };
+    // Force portrait orientation - if video is landscape, rotate it
+    let captureWidth, captureHeight;
+    if (videoWidth > videoHeight) {
+      // Video is landscape, we want portrait
+      captureWidth = videoHeight;
+      captureHeight = videoWidth;
+      canvas.width = captureWidth;
+      canvas.height = captureHeight;
 
-    ctx.filter = filterMap[this.currentFilter] || 'none';
+      // Calculate crop to center
+      const sx = (videoWidth - captureWidth) / 2;
 
-    // Mirror if front camera
-    if (this.facingMode === 'user') {
-      ctx.translate(canvas.width, 0);
-      ctx.scale(-1, 1);
+      const filterMap = {
+        'none': 'none',
+        'grayscale': 'grayscale(100%)',
+        'sepia': 'sepia(100%)',
+        'saturate': 'saturate(200%)',
+        'contrast': 'contrast(150%)',
+        'brightness': 'brightness(130%)',
+        'hue-rotate': 'hue-rotate(90deg)',
+        'invert': 'invert(100%)',
+        'blur': 'blur(2px)',
+        'vintage': 'sepia(50%) contrast(120%) brightness(90%)'
+      };
+      ctx.filter = filterMap[this.currentFilter] || 'none';
+
+      if (this.facingMode === 'user') {
+        ctx.translate(canvas.width, 0);
+        ctx.scale(-1, 1);
+      }
+
+      ctx.drawImage(video, sx, 0, captureWidth, captureHeight, 0, 0, captureWidth, captureHeight);
+    } else {
+      // Already portrait
+      canvas.width = videoWidth;
+      canvas.height = videoHeight;
+
+      const filterMap = {
+        'none': 'none',
+        'grayscale': 'grayscale(100%)',
+        'sepia': 'sepia(100%)',
+        'saturate': 'saturate(200%)',
+        'contrast': 'contrast(150%)',
+        'brightness': 'brightness(130%)',
+        'hue-rotate': 'hue-rotate(90deg)',
+        'invert': 'invert(100%)',
+        'blur': 'blur(2px)',
+        'vintage': 'sepia(50%) contrast(120%) brightness(90%)'
+      };
+      ctx.filter = filterMap[this.currentFilter] || 'none';
+
+      if (this.facingMode === 'user') {
+        ctx.translate(canvas.width, 0);
+        ctx.scale(-1, 1);
+      }
+
+      ctx.drawImage(video, 0, 0);
     }
 
-    ctx.drawImage(video, 0, 0);
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.filter = 'none';
 
-    App.capturedImageData = canvas.toDataURL('image/jpeg', 0.8);
+    App.capturedImageData = canvas.toDataURL('image/jpeg', 0.85);
     this.showPreview(App.capturedImageData);
   },
 
@@ -267,13 +317,11 @@ const Camera = {
   startRecording() {
     this.isRecording = true;
     document.getElementById('capture-btn').classList.add('recording');
-    UI.showToast('Hold to record...', 'info');
   },
 
   stopRecording() {
     this.isRecording = false;
     document.getElementById('capture-btn').classList.remove('recording');
-    // For now, just capture a photo
     this.capture();
   },
 
