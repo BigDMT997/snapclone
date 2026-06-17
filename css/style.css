@@ -2005,3 +2005,63 @@ html, body {
   height: 100%;
   overflow: hidden;
 }
+
+/* ========== FIX: Avatar images stay inside their circles ========== */
+.chat-avatar,
+.conv-avatar,
+.friend-avatar,
+.story-avatar,
+.story-list-avatar,
+.story-viewer-avatar,
+.profile-avatar-large,
+.send-to-icon,
+.avatar-btn {
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.chat-avatar img,
+.conv-avatar img,
+.friend-avatar img,
+.story-avatar img,
+.story-list-avatar img,
+.story-viewer-avatar img,
+.profile-avatar-large img,
+.send-to-icon img,
+.avatar-btn img,
+#chat-user-avatar img,
+#user-avatar-icon img {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+  border-radius: 50%;
+  display: block;
+}
+
+/* Specifically force chat header avatar to stay small */
+.chat-header .chat-avatar {
+  width: 36px !important;
+  height: 36px !important;
+  max-width: 36px;
+  max-height: 36px;
+}
+
+.chat-header .chat-avatar img {
+  width: 36px !important;
+  height: 36px !important;
+}
+
+/* Profile button in chat tab header */
+#chat-user-avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  border-radius: 50%;
+}
+
+#chat-profile-btn {
+  overflow: hidden;
+}
