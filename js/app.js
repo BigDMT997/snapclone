@@ -183,28 +183,33 @@ const App = {
 
   navigateTo(screenId) {
     const screens = document.querySelectorAll('.screen');
-    screens.forEach(s => s.classList.remove('active'));
+    screens.forEach(s => {
+      s.classList.remove('active');
+      s.style.display = 'none';
+    });
 
     const target = document.getElementById(screenId);
     if (target) {
-      target.classList.add('active');
       target.style.display = 'block';
+      target.classList.add('active');
       this.currentScreen = screenId;
+
+      if (screenId === 'chat-screen') {
+        Chat.loadConversations();
+      } else if (screenId === 'stories-screen') {
+        Stories.loadStories();
+      } else if (screenId === 'friends-screen') {
+        Friends.loadFriends();
+      }
     }
 
-    // Show/hide bottom nav
     const bottomNav = document.getElementById('bottom-nav');
     const hideNavScreens = ['chat-detail-screen', 'story-viewer', 'snap-viewer', 'send-to-screen', 'add-friends-screen'];
     bottomNav.style.display = hideNavScreens.includes(screenId) ? 'none' : 'flex';
 
-    // Update nav active states
     document.querySelectorAll('.nav-btn').forEach(btn => {
       btn.classList.toggle('active', btn.dataset.screen === screenId);
     });
-
-    if (screenId === 'camera-screen') {
-      document.querySelectorAll('.nav-btn')[2].classList.add('active');
-    }
   },
 
   updateProfile() {
