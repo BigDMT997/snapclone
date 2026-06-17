@@ -41,35 +41,59 @@ router.post('/send', auth, async (req, res) => {
   try {
     const { recipients, imageData, duration, caption, filters, stickers } = req.body;
 
-    if (!recipients || !recipients.length || !imageData) {
-      return res.status(400).json({ error: 'Recipients and image are required' });
+    console.log('Snap send request received');
+    console.log('Recipients:', recipients?.length);
+    console.log('Has image:', !!imageData);
+    console.log('Image size:', imageData?.length);
+
+    if (!recipients || !recipients.length) {
+      return res.status(400).json({ error: 'No recipients selected' });
     }
 
-    const snaps = await Promise.all(
-      recipients.map(async (recipientId) => {
+    if (!imageData) {
+      return res.status(400).json({ error: 'No image data provided' });
+    }
+
+    const snaps = [];
+    for (const recipientId of recipients) {
+      try {
         const snap = new Snap({
           sender: req.userId,
           recipient: recipientId,
-          imageData,
+          imageData: imageData,
           duration: duration || 5,
           caption: caption || '',
           filters: filters || [],
           stickers: stickers || []
         });
-        await snap.save();
-        return snap;
-      })
-    );
+        const savedSnap = await snap.save();
+        snaps.push(savedSnap);
+        console.log('Snap saved with ID:', savedSnap._id);
+
+        // Notify recipient via socket if connected
+        const io = req.app.get('io');
+        if (io) {
+          io.to(`user_${recipientId}`).emit('new_snap', {
+            snapId: savedSnap._id,
+            senderId: req.userId,
+            timestamp: savedSnap.createdAt
+          });
+        }
+      } catch (snapErr) {
+        console.error('Error saving individual snap:', snapErr);
+      }
+    }
 
     // Update snap score
     await User.findByIdAndUpdate(req.userId, {
-      $inc: { snapScore: recipients.length }
+      $inc: { snapScore: snaps.length }
     });
 
+    console.log(`Successfully sent ${snaps.length} snaps`);
     res.json({ message: 'Snaps sent', count: snaps.length });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Server error' });
+    console.error('Snap send error:', err);
+    res.status(500).json({ error: err.message || 'Failed to send snap' });
   }
 });
 
