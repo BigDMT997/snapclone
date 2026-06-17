@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#000000">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="SnapClone">
+  <link rel="apple-touch-icon" href="/icons/icon-152x152.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="/icons/icon-192x192.png">
+  <link rel="manifest" href="/manifest.json">
+  <title>SnapClone</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+</head>
+<body>
+
+  <!-- Splash Screen -->
+  <div id="splash-screen" class="splash-screen">
+    <div class="splash-content">
+      <div class="splash-icon">👻</div>
+      <h1>SnapClone</h1>
+      <div class="splash-loader"></div>
+    </div>
+  </div>
+
+  <!-- Auth Screen -->
+  <div id="auth-screen" class="screen" style="display:none;">
+    <div class="auth-container">
+      <div class="auth-header">
+        <div class="auth-logo">👻</div>
+        <h1>SnapClone</h1>
+      </div>
+
+      <!-- Login Form -->
+      <div id="login-form" class="auth-form">
+        <h2>Log In</h2>
+        <div class="input-group">
+          <input type="text" id="login-username" placeholder="Username or Email" autocomplete="username" autocapitalize="none">
+        </div>
+        <div class="input-group">
+          <input type="password" id="login-password" placeholder="Password" autocomplete="current-password">
+        </div>
+        <button id="login-btn" class="btn-primary">Log In</button>
+        <p class="auth-switch">Don't have an account? <a href="#" id="show-register">Sign Up</a></p>
+      </div>
+
+      <!-- Register Form -->
+      <div id="register-form" class="auth-form" style="display:none;">
+        <h2>Sign Up</h2>
+        <div class="input-group">
+          <input type="text" id="reg-displayname" placeholder="Display Name" maxlength="30">
+        </div>
+        <div class="input-group">
+          <input type="text" id="reg-username" placeholder="Username" autocapitalize="none" maxlength="20">
+          <span id="username-status" class="input-status"></span>
+        </div>
+        <div class="input-group">
+          <input type="email" id="reg-email" placeholder="Email" autocapitalize="none">
+        </div>
+        <div class="input-group">
+          <input type="password" id="reg-password" placeholder="Password (min 6 characters)">
+        </div>
+        <div class="input-group">
+          <input type="password" id="reg-confirm-password" placeholder="Confirm Password">
+        </div>
+        <button id="register-btn" class="btn-primary">Sign Up</button>
+        <p class="auth-switch">Already have an account? <a href="#" id="show-login">Log In</a></p>
+      </div>
+
+      <div id="auth-error" class="auth-error"></div>
+    </div>
+  </div>
+
+  <!-- Main App -->
+  <div id="app" class="app-container" style="display:none;">
+
+    <!-- Camera Screen (Main/Center) -->
+    <div id="camera-screen" class="screen active">
+      <div class="camera-container">
+        <video id="camera-preview" autoplay playsinline muted></video>
+        <canvas id="camera-canvas" style="display:none;"></canvas>
+
+        <!-- Camera Top Bar -->
+        <div class="camera-top-bar">
+          <button id="flash-btn" class="camera-btn"><i class="fas fa-bolt"></i></button>
+          <div class="camera-top-center">
+            <button id="profile-btn" class="camera-btn avatar-btn">
+              <span id="user-avatar-icon">👻</span>
+            </button>
+          </div>
+          <button id="camera-flip-btn" class="camera-btn"><i class="fas fa-sync-alt"></i></button>
+        </div>
+
+        <!-- Camera filters overlay -->
+        <div id="filters-bar" class="filters-bar" style="display:none;">
+          <div class="filters-scroll">
+            <button class="filter-btn active" data-filter="none">Normal</button>
+            <button class="filter-btn" data-filter="grayscale">B&W</button>
+            <button class="filter-btn" data-filter="sepia">Sepia</button>
+            <button class="filter-btn" data-filter="saturate">Vivid</button>
+            <button class="filter-btn" data-filter="contrast">Contrast</button>
+            <button class="filter-btn" data-filter="brightness">Bright</button>
+            <button class="filter-btn" data-filter="hue-rotate">Hue</button>
+            <button class="filter-btn" data-filter="invert">Invert</button>
+            <button class="filter-btn" data-filter="blur">Blur</button>
+            <button class="filter-btn" data-filter="vintage">Vintage</button>
+          </div>
+        </div>
+
+        <!-- Capture Button -->
+        <div class="camera-bottom-bar">
+          <div class="camera-bottom-left">
+            <button id="gallery-btn" class="camera-btn"><i class="fas fa-images"></i></button>
+          </div>
+          <div class="capture-btn-wrapper">
+            <button id="capture-btn" class="capture-btn">
+              <div class="capture-btn-inner"></div>
+            </button>
+          </div>
+          <div class="camera-bottom-right">
+            <button id="filters-toggle-btn" class="camera-btn"><i class="fas fa-magic"></i></button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Photo Preview (after capture) -->
+      <div id="photo-preview" class="photo-preview" style="display:none;">
+        <img id="captured-image" src="" alt="Captured">
+        <div class="preview-top-bar">
+          <button id="preview-close" class="camera-btn"><i class="fas fa-times"></i></button>
+          <div class="preview-tools">
+            <button id="text-tool" class="camera-btn"><i class="fas fa-font"></i></button>
+            <button id="draw-tool" class="camera-btn"><i class="fas fa-pencil-alt"></i></button>
+            <button id="sticker-tool" class="camera-btn"><i class="fas fa-sticky-note"></i></button>
+          </div>
+        </div>
+
+        <!-- Text Overlay Input -->
+        <div id="text-overlay-input" class="text-overlay-input" style="display:none;">
+          <input type="text" id="snap-caption-input" placeholder="Add caption..." maxlength="200">
+        </div>
+
+        <!-- Caption Display -->
+        <div id="caption-display" class="caption-display" style="display:none;">
+          <span id="caption-text"></span>
+        </div>
+
+        <div class="preview-bottom-bar">
+          <div class="preview-bottom-left">
+            <button id="save-snap-btn" class="preview-action-btn">
+              <i class="fas fa-download"></i>
+              <span>Save</span>
+            </button>
+            <button id="story-btn" class="preview-action-btn">
+              <i class="fas fa-plus-circle"></i>
+              <span>Story</span>
+            </button>
+          </div>
+          <button id="send-snap-btn" class="send-btn">
+            <i class="fas fa-paper-plane"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Chat Screen (Right swipe) -->
+    <div id="chat-screen" class="screen">
+      <div class="screen-header">
+        <button class="back-to-camera"><i class="fas fa-chevron-left"></i></button>
+        <h2>Chat</h2>
+        <button id="new-chat-btn" class="header-btn"><i class="fas fa-comment-medical"></i></button>
+      </div>
+
+      <div class="search-bar">
+        <i class="fas fa-search"></i>
+        <input type="text" id="chat-search" placeholder="Search">
+      </div>
+
+      <div id="conversations-list" class="conversations-list">
+        <!-- Populated dynamically -->
+      </div>
+    </div>
+
+    <!-- Individual Chat Screen -->
+    <div id="chat-detail-screen" class="screen" style="display:none;">
+      <div class="chat-header">
+        <button id="chat-back-btn" class="back-btn"><i class="fas fa-chevron-left"></i></button>
+        <div class="chat-user-info">
+          <div class="chat-avatar" id="chat-avatar">👻</div>
+          <div class="chat-user-details">
+            <h3 id="chat-username"></h3>
+            <span id="chat-status" class="chat-status"></span>
+          </div>
+        </div>
+        <div class="chat-header-actions">
+          <button id="chat-call-btn" class="header-btn"><i class="fas fa-phone"></i></button>
+          <button id="chat-video-btn" class="header-btn"><i class="fas fa-video"></i></button>
+        </div>
+      </div>
+
+      <div id="messages-container" class="messages-container">
+        <!-- Messages populated dynamically -->
+      </div>
+
+      <div id="typing-indicator" class="typing-indicator" style="display:none;">
+        <div class="typing-dots">
+          <span></span><span></span><span></span>
+        </div>
+      </div>
+
+      <div class="chat-input-bar">
+        <button id="chat-camera-btn" class="chat-input-btn"><i class="fas fa-camera"></i></button>
+        <div class="chat-input-wrapper">
+          <input type="text" id="message-input" placeholder="Send a chat">
+          <button id="chat-media-btn" class="chat-input-btn"><i class="fas fa-image"></i></button>
+        </div>
+        <button id="send-message-btn" class="chat-send-btn" style="display:none;">
+          <i class="fas fa-paper-plane"></i>
+        </button>
+        <button id="chat-mic-btn" class="chat-input-btn">
+          <i class="fas fa-microphone"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- Stories Screen (Left swipe) -->
+    <div id="stories-screen" class="screen">
+      <div class="screen-header">
+        <button class="header-btn"><i class="fas fa-user-friends"></i></button>
+        <h2>Stories</h2>
+        <button class="back-to-camera"><i class="fas fa-chevron-right"></i></button>
+      </div>
+
+      <div class="stories-section">
+        <h3 class="section-title">My Story</h3>
+        <div id="my-story-container" class="story-row">
+          <div class="story-item my-story" id="my-story-add">
+            <div class="story-avatar add-story">
+              <i class="fas fa-plus"></i>
+            </div>
+            <span>Add to Story</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="stories-section">
+        <h3 class="section-title">Friends</h3>
+        <div id="friends-stories-list" class="stories-list">
+          <!-- Populated dynamically -->
+        </div>
+      </div>
+    </div>
+
+    <!-- Story Viewer -->
+    <div id="story-viewer" class="story-viewer" style="display:none;">
+      <div class="story-progress-bar">
+        <div id="story-progress" class="story-progress"></div>
+      </div>
+      <div class="story-viewer-header">
+        <div class="story-viewer-user">
+          <div class="story-viewer-avatar" id="story-viewer-avatar">👻</div>
+          <div>
+            <span id="story-viewer-username" class="story-viewer-name"></span>
+            <span id="story-viewer-time" class="story-viewer-time"></span>
+          </div>
+        </div>
+        <button id="story-close-btn" class="camera-btn"><i class="fas fa-times"></i></button>
+      </div>
+      <img id="story-viewer-image" class="story-viewer-image" src="" alt="Story">
+      <div id="story-viewer-caption" class="story-viewer-caption"></div>
+      <div class="story-viewer-footer">
+        <div class="story-reply-bar">
+          <input type="text" id="story-reply-input" placeholder="Reply...">
+          <button id="story-reply-send" class="chat-send-btn"><i class="fas fa-paper-plane"></i></button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Snap Viewer -->
+    <div id="snap-viewer" class="snap-viewer" style="display:none;">
+      <div class="snap-timer-bar">
+        <div id="snap-timer-progress" class="snap-timer-progress"></div>
+      </div>
+      <div class="snap-viewer-header">
+        <div class="snap-viewer-user">
+          <span id="snap-viewer-username"></span>
+          <span id="snap-viewer-time" class="snap-viewer-time"></span>
+        </div>
+        <button id="snap-close-btn" class="camera-btn"><i class="fas fa-times"></i></button>
+      </div>
+      <img id="snap-viewer-image" class="snap-viewer-image" src="" alt="Snap">
+      <div id="snap-viewer-caption" class="snap-viewer-caption"></div>
+    </div>
+
+    <!-- Send To Screen -->
+    <div id="send-to-screen" class="screen" style="display:none;">
+      <div class="screen-header">
+        <button id="send-to-back" class="back-btn"><i class="fas fa-times"></i></button>
+        <h2>Send To</h2>
+        <button id="send-to-confirm" class="header-btn send-confirm-btn" style="display:none;">
+          <i class="fas fa-paper-plane"></i>
+          <span id="send-count"></span>
+        </button>
+      </div>
+      <div class="search-bar">
+        <i class="fas fa-search"></i>
+        <input type="text" id="send-to-search" placeholder="Search">
+      </div>
+      <div class="send-to-section">
+        <div class="send-to-option" id="send-to-story">
+          <div class="send-to-icon story-icon"><i class="fas fa-plus"></i></div>
+          <span>My Story</span>
+          <div class="send-to-check" id="story-check"></div>
+        </div>
+      </div>
+      <h3 class="section-title">Friends</h3>
+      <div id="send-to-friends" class="send-to-list">
+        <!-- Populated dynamically -->
+      </div>
+    </div>
+
+    <!-- Friends/Add Friends Screen -->
+    <div id="friends-screen" class="screen" style="display:none;">
+      <div class="screen-header">
+        <button id="friends-back-btn" class="back-btn"><i class="fas fa-chevron-left"></i></button>
+        <h2>Friends</h2>
+        <button id="add-friends-btn" class="header-btn"><i class="fas fa-user-plus"></i></button>
+      </div>
+
+      <!-- Friend Requests -->
+      <div id="friend-requests-section" class="friends-section" style="display:none;">
+        <h3 class="section-title">Friend Requests</h3>
+        <div id="friend-requests-list" class="friends-list"></div>
+      </div>
+
+      <!-- Friends List -->
+      <div class="friends-section">
+        <h3 class="section-title">My Friends</h3>
+        <div id="friends-list" class="friends-list"></div>
+      </div>
+    </div>
+
+    <!-- Add Friends Screen -->
+    <div id="add-friends-screen" class="screen" style="display:none;">
+      <div class="screen-header">
+        <button id="add-friends-back-btn" class="back-btn"><i class="fas fa-chevron-left"></i></button>
+        <h2>Add Friends</h2>
+      </div>
+      <div class="search-bar">
+        <i class="fas fa-search"></i>
+        <input type="text" id="add-friend-search" placeholder="Find friends by username">
+      </div>
+      <div id="search-results" class="friends-list"></div>
+    </div>
+
+    <!-- Profile Screen -->
+    <div id="profile-screen" class="screen" style="display:none;">
+      <div class="screen-header">
+        <button id="profile-back-btn" class="back-btn"><i class="fas fa-chevron-left"></i></button>
+        <h2>Profile</h2>
+        <button id="settings-btn" class="header-btn"><i class="fas fa-cog"></i></button>
+      </div>
+      <div class="profile-content">
+        <div class="profile-card">
+          <div class="profile-avatar-large" id="profile-avatar-large">👻</div>
+          <h2 id="profile-display-name"></h2>
+          <p id="profile-username" class="profile-username"></p>
+          <div class="profile-stats">
+            <div class="stat">
+              <span class="stat-value" id="snap-score-value">0</span>
+              <span class="stat-label">Snap Score</span>
+            </div>
+            <div class="stat">
+              <span class="stat-value" id="friends-count-value">0</span>
+              <span class="stat-label">Friends</span>
+            </div>
+          </div>
+        </div>
+        <div class="profile-actions">
+          <button id="edit-display-name-btn" class="profile-action-btn">
+            <i class="fas fa-edit"></i> Edit Display Name
+          </button>
+          <button id="change-avatar-btn" class="profile-action-btn">
+            <i class="fas fa-camera"></i> Change Avatar
+          </button>
+          <button id="view-friends-btn" class="profile-action-btn">
+            <i class="fas fa-user-friends"></i> My Friends
+          </button>
+          <button id="logout-btn" class="profile-action-btn logout">
+            <i class="fas fa-sign-out-alt"></i> Log Out
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bottom Navigation -->
+    <nav id="bottom-nav" class="bottom-nav">
+      <button class="nav-btn" data-screen="stories-screen">
+        <i class="fas fa-map"></i>
+        <span>Map</span>
+      </button>
+      <button class="nav-btn" data-screen="chat-screen">
+        <i class="fas fa-comment"></i>
+        <span>Chat</span>
+        <span id="chat-badge" class="nav-badge" style="display:none;"></span>
+      </button>
+      <button class="nav-btn active" data-screen="camera-screen">
+        <i class="fas fa-camera"></i>
+      </button>
+      <button class="nav-btn" data-screen="stories-screen">
+        <i class="fas fa-users"></i>
+        <span>Stories</span>
+      </button>
+      <button class="nav-btn" data-screen="spotlight-screen">
+        <i class="fas fa-play-circle"></i>
+        <span>Spotlight</span>
+      </button>
+    </nav>
+
+    <!-- Toast Notifications -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <!-- Loading Overlay -->
+    <div id="loading-overlay" class="loading-overlay" style="display:none;">
+      <div class="loading-spinner"></div>
+    </div>
+
+    <!-- File input for gallery -->
+    <input type="file" id="gallery-input" accept="image/*,video/*" style="display:none;">
+    <input type="file" id="chat-media-input" accept="image/*" style="display:none;">
+    <input type="file" id="avatar-input" accept="image/*" style="display:none;">
+  </div>
+
+  <!-- Socket.IO -->
+  <script src="/socket.io/socket.io.js"></script>
+
+  <!-- App Scripts -->
+  <script src="/js/app.js"></script>
+  <script src="/js/auth.js"></script>
+  <script src="/js/camera.js"></script>
+  <script src="/js/chat.js"></script>
+  <script src="/js/snaps.js"></script>
+  <script src="/js/stories.js"></script>
+  <script src="/js/friends.js"></script>
+  <script src="/js/ui.js"></script>
+</body>
+</html>

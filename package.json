@@ -1,0 +1,12 @@
+{
+  "name": "snapclone",
+  "version": "1.0.0",
+  "description": "Snapchat PWA Clone",
+  "scripts": {
+    "start": "cd server && node server.js",
+    "install-server": "cd server && npm install"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
