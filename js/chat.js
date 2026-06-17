@@ -136,10 +136,13 @@ const Chat = {
     }
   },
 
-  handleConversationClick(userId, username, displayName, avatar, hasPendingSnap, snapId) {
-    if (hasPendingSnap && snapId) {
-      // Open the snap first
-      Snaps.openSnap(snapId);
+handleConversationClick(userId, username, displayName, avatar, hasPendingSnap, snapId) {
+    if (hasPendingSnap && snapId && snapId !== 'undefined' && snapId !== '') {
+      // Try to open the snap, but fall back to chat if it fails
+      Snaps.openSnap(snapId, () => {
+        // Callback if snap fails - just open the chat
+        this.openChat(userId, username, displayName, avatar);
+      });
     } else {
       this.openChat(userId, username, displayName, avatar);
     }

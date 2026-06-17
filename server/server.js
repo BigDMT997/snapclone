@@ -229,6 +229,25 @@ io.on('connection', (socket) => {
 // Start cleanup job for expired snaps/stories
 startCleanupJob();
 
+// One-time cleanup of bugged snaps on startup
+setTimeout(async () => {
+  try {
+    const Snap = require('./models/Snap');
+    const result = await Snap.deleteMany({
+      $or: [
+        { imageData: null },
+        { imageData: '' },
+        { imageData: { $exists: false } }
+      ]
+    });
+    if (result.deletedCount > 0) {
+      console.log(`Cleaned up ${result.deletedCount} bugged snaps on startup`);
+    }
+  } catch (err) {
+    console.error('Startup cleanup error:', err);
+  }
+}, 5000);
+
 // Serve index.html for all non-API routes (SPA)
 app.get('*', (req, res) => {
   if (!req.path.startsWith('/api/')) {

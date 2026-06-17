@@ -193,4 +193,29 @@ router.get('/feed', auth, async (req, res) => {
   }
 });
 
+
+// Delete a snap (for cleanup of bugged snaps)
+router.delete('/:snapId/delete', auth, async (req, res) => {
+  try {
+    const snap = await Snap.findOne({
+      _id: req.params.snapId,
+      $or: [
+        { recipient: req.userId },
+        { sender: req.userId }
+      ]
+    });
+
+    if (!snap) {
+      return res.status(404).json({ error: 'Snap not found' });
+    }
+
+    await Snap.deleteOne({ _id: req.params.snapId });
+    console.log('Snap deleted:', req.params.snapId);
+    res.json({ message: 'Snap deleted' });
+  } catch (err) {
+    console.error('Delete snap error:', err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
 module.exports = router;

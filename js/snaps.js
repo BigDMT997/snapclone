@@ -182,16 +182,43 @@ const Snaps = {
     Chat.loadConversations();
   },
 
-  async openSnap(snapId) {
+async openSnap(snapId, fallbackCallback) {
     try {
       const snap = await App.api(`/api/snaps/${snapId}/open`, {
         method: 'POST'
       });
 
+      // Check if snap has valid data
+      if (!snap || !snap.imageData) {
+        console.warn('Snap has no image data, deleting and opening chat');
+        await this.deleteBuggedSnap(snapId);
+        if (fallbackCallback) fallbackCallback();
+        return;
+      }
+
       this.showSnapViewer(snap);
     } catch (err) {
       console.error('Error opening snap:', err);
-      UI.showToast('Could not open snap', 'error');
+      // Delete the bugged snap
+      await this.deleteBuggedSnap(snapId);
+      UI.showToast('Snap unavailable, opening chat', 'info');
+      // Fall back to opening chat
+      if (fallbackCallback) {
+        fallbackCallback();
+      }
+      // Refresh conversation list
+      Chat.loadConversations();
+    }
+  },
+
+  async deleteBuggedSnap(snapId) {
+    try {
+      await App.api(`/api/snaps/${snapId}/delete`, {
+        method: 'DELETE'
+      });
+      console.log('Deleted bugged snap:', snapId);
+    } catch (err) {
+      console.error('Failed to delete bugged snap:', err);
     }
   },
 
