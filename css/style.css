@@ -2065,3 +2065,31 @@ html, body {
 #chat-profile-btn {
   overflow: hidden;
 }
+
+/* ========== FIX: Camera preview matches captured photo ========== */
+#camera-preview {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Don't mirror the preview - show as-is so it matches the photo */
+#camera-preview {
+  transform: none !important;
+  -webkit-transform: none !important;
+}
+
+/* When using front camera, mirror it (like a normal selfie cam preview) */
+#camera-preview.front-camera {
+  transform: scaleX(-1) !important;
+  -webkit-transform: scaleX(-1) !important;
+}
+
+.camera-container {
+  position: relative;
+  width: 100%;
+  height: 100vh;
+  height: 100dvh;
+  background: #000;
+  overflow: hidden;
+}

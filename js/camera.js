@@ -116,6 +116,13 @@ const Camera = {
       this.stream = await navigator.mediaDevices.getUserMedia(constraints);
       const video = document.getElementById('camera-preview');
       video.srcObject = this.stream;
+
+      // Mirror preview only for front camera (so it looks like a mirror)
+      if (this.facingMode === 'user') {
+        video.classList.add('front-camera');
+      } else {
+        video.classList.remove('front-camera');
+      }
     } catch (err) {
       console.error('Camera error:', err);
       UI.showToast('Camera access denied', 'error');
@@ -181,12 +188,13 @@ const Camera = {
 
     ctx.filter = filterMap[this.currentFilter] || 'none';
 
+    // Draw the image normally - mirror for front camera so it matches preview
     if (this.facingMode === 'user') {
       ctx.translate(canvas.width, 0);
       ctx.scale(-1, 1);
     }
 
-    ctx.drawImage(video, 0, 0);
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.filter = 'none';
 
